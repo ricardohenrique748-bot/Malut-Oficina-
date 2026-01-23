@@ -1,0 +1,59 @@
+[2026-01-12T14:02:59.449Z] 
+Invalid `prisma.user.update()` invocation:
+
+{
+  where: {
+    id: "227e4242-9b07-4a39-ba8d-290d3d40bcdf"
+  },
+  data: {
+    name: "Ricardo Henrique Pereira da luz",
+    email: "ricardo.luz@eunaman.com.br",
+    roleId: "admin-id",
+    ~~~~~~
+    commissionRate: 5,
+    active: true,
+?   id?: String | StringFieldUpdateOperationsInput,
+?   passwordHash?: String | NullableStringFieldUpdateOperationsInput | Null,
+?   createdAt?: DateTime | DateTimeFieldUpdateOperationsInput,
+?   updatedAt?: DateTime | DateTimeFieldUpdateOperationsInput,
+?   role?: RoleUpdateOneRequiredWithoutUsersNestedInput,
+?   workOrdersResponsible?: WorkOrderUpdateManyWithoutResponsibleNestedInput,
+?   workOrdersCreated?: WorkOrderUpdateManyWithoutCreatedByNestedInput,
+?   statusChanges?: WorkOrderStatusHistoryUpdateManyWithoutChangedByNestedInput
+  }
+}
+
+Unknown argument `roleId`. Did you mean `role`? Available options are marked with ?.
+PrismaClientValidationError: 
+Invalid `prisma.user.update()` invocation:
+
+{
+  where: {
+    id: "227e4242-9b07-4a39-ba8d-290d3d40bcdf"
+  },
+  data: {
+    name: "Ricardo Henrique Pereira da luz",
+    email: "ricardo.luz@eunaman.com.br",
+    roleId: "admin-id",
+    ~~~~~~
+    commissionRate: 5,
+    active: true,
+?   id?: String | StringFieldUpdateOperationsInput,
+?   passwordHash?: String | NullableStringFieldUpdateOperationsInput | Null,
+?   createdAt?: DateTime | DateTimeFieldUpdateOperationsInput,
+?   updatedAt?: DateTime | DateTimeFieldUpdateOperationsInput,
+?   role?: RoleUpdateOneRequiredWithoutUsersNestedInput,
+?   workOrdersResponsible?: WorkOrderUpdateManyWithoutResponsibleNestedInput,
+?   workOrdersCreated?: WorkOrderUpdateManyWithoutCreatedByNestedInput,
+?   statusChanges?: WorkOrderStatusHistoryUpdateManyWithoutChangedByNestedInput
+  }
+}
+
+Unknown argument `roleId`. Did you mean `role`? Available options are marked with ?.
+    at wn (webpack-internal:///(rsc)/./lib/generated/prisma/runtime/library.js:3654:11)
+    at $n.handleRequestError (webpack-internal:///(rsc)/./lib/generated/prisma/runtime/library.js:6769:13)
+    at $n.handleAndLogRequestError (webpack-internal:///(rsc)/./lib/generated/prisma/runtime/library.js:6756:18)
+    at $n.request (webpack-internal:///(rsc)/./lib/generated/prisma/runtime/library.js:6736:18)
+    at async l1 (webpack-internal:///(rsc)/./lib/generated/prisma/runtime/library.js:7404:26)
+    at async POST (webpack-internal:///(rsc)/./app/api/staff/route.ts:73:26)
+    at async C:\Users\luckh\Desktop\Nova pasta\Malut-Oficina\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:63251

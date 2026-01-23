@@ -1,0 +1,4 @@
+﻿NEXT_PUBLIC_SUPABASE_URL="https://xhfukexobxdgwknrlbzt.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhoZnVrZXhvYnhkZ3drbnJsYnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxOTgxNDAsImV4cCI6MjA4NDc3NDE0MH0.Pi18-NK-Gg7waUhdRMMxINC8gDEJylIKeImQEndqRzM"
+DATABASE_URL="postgresql://prisma_user.xhfukexobxdgwknrlbzt:PrismaPass123!@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require"
+DIRECT_URL="postgresql://prisma_user.xhfukexobxdgwknrlbzt:PrismaPass123!@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require"

@@ -1,0 +1,316 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth & RBAC ---
+
+model User {
+  id            String    @id @db.VarChar(100)
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  roleId        String    @db.VarChar(100)
+  active        Boolean   @default(true)
+  commissionRate Decimal?  @default(0) @db.Decimal(5, 2) // Individual commission rate (%)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  role          Role      @relation(fields: [roleId], references: [id])
+  
+  // Relations
+  workOrdersResponsible WorkOrder[] @relation("Responsible")
+  workOrdersSold        WorkOrder[] @relation("Seller")
+  workOrdersCreated     WorkOrder[] @relation("CreatedBy")
+  statusChanges         WorkOrderStatusHistory[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid()) @db.VarChar(100)
+  name        String   @unique // ADMIN, RECEPCAO, MECANICO, FINANCEIRO, GERENTE
+  description String?
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid()) @db.VarChar(100)
+  slug        String   @unique // e.g. "customer.create", "financial.view"
+  description String?
+
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @db.VarChar(100)
+  permissionId String     @db.VarChar(100)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// --- CRM ---
+
+model Customer {
+  id        String   @id @default(cuid()) @db.VarChar(100)
+  name      String
+  document  String?  // CPF/CNPJ
+  phone     String?
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vehicles  Vehicle[]
+  workOrders WorkOrder[]
+
+  @@map("customers")
+}
+
+model Vehicle {
+  id          String   @id @default(cuid()) @db.VarChar(100)
+  plate       String   @unique
+  brand       String
+  model       String
+  color       String?
+  year        Int?
+  customerId  String   @db.VarChar(100)
+  createdAt   DateTime @default(now())
+
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  workOrders  WorkOrder[]
+
+  @@map("vehicles")
+}
+
+// --- Work Order (OS) ---
+
+enum WorkOrderStatus {
+  ABERTA
+  DIAGNOSTICO
+  ORCAMENTO
+  AGUARDANDO_APROVACAO
+  APROVADA
+  EM_EXECUCAO
+  TESTE_QUALIDADE
+  FINALIZADA
+  ENTREGUE
+  GARANTIA
+}
+
+model WorkOrder {
+  id            String          @id @default(cuid()) @db.VarChar(100)
+  code          Int             @default(autoincrement()) // Sequential ID helpful for humans
+  customerId    String          @db.VarChar(100)
+  vehicleId     String?         @db.VarChar(100)
+  status        WorkOrderStatus @default(ABERTA)
+  
+  responsibleId String?         @db.VarChar(100) // Who is currently handling it (e.g. specific mechanic)
+  sellerId      String?         @db.VarChar(100) // Who sold the service
+  createdById   String          @db.VarChar(100)
+
+  totalParts    Decimal         @default(0) @db.Decimal(10, 2)
+  totalLabor    Decimal         @default(0) @db.Decimal(10, 2)
+  totalValue    Decimal         @default(0) @db.Decimal(10, 2)
+  discount      Decimal         @default(0) @db.Decimal(10, 2)
+  
+  notes         String?         @db.Text
+  scheduledFor  DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  customer      Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle?        @relation(fields: [vehicleId], references: [id])
+  responsible   User?           @relation("Responsible", fields: [responsibleId], references: [id])
+  seller        User?           @relation("Seller", fields: [sellerId], references: [id])
+  createdBy     User            @relation("CreatedBy", fields: [createdById], references: [id])
+
+  items         WorkOrderItem[]
+  statusHistory WorkOrderStatusHistory[]
+  financials    FinancialRecord[]
+
+  @@unique([code])
+  @@map("work_orders")
+}
+
+model WorkOrderStatusHistory {
+  id          String          @id @default(cuid()) @db.VarChar(100)
+  workOrderId String          @db.VarChar(100)
+  oldStatus   WorkOrderStatus?
+  newStatus   WorkOrderStatus
+  changedById String          @db.VarChar(100)
+  notes       String?
+  createdAt   DateTime        @default(now())
+
+  workOrder   WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  changedBy   User            @relation(fields: [changedById], references: [id])
+
+  @@map("work_order_status_history")
+}
+
+enum OrderItemType {
+  PART
+  SERVICE
+}
+
+model WorkOrderItem {
+  id              String        @id @default(cuid()) @db.VarChar(100)
+  workOrderId     String        @db.VarChar(100)
+  type            OrderItemType
+  
+  catalogItemId   String?       // Link to ServiceCatalog or Part
+  name            String
+  quantity        Decimal       @default(1) @db.Decimal(10, 2)
+  unitPrice       Decimal       @db.Decimal(10, 2)
+  total           Decimal       @db.Decimal(10, 2)
+
+  workOrder       WorkOrder     @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@map("work_order_items")
+}
+
+// --- Catalog & Inventory ---
+
+model Part {
+  id            String   @id @default(cuid()) @db.VarChar(100)
+  name          String
+  sku           String?  @unique
+  description   String?
+  price         Decimal  @db.Decimal(10, 2) // Sell price
+  costPrice     Decimal  @default(0) @db.Decimal(10, 2)
+  stockQuantity Decimal  @default(0) @db.Decimal(10, 2)
+  minStock      Decimal  @default(0) @db.Decimal(10, 2)
+  
+  movements     StockMovement[]
+
+  @@map("parts")
+}
+
+model ServiceCatalog {
+  id          String   @id @default(cuid()) @db.VarChar(100)
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  estimatedMinutes Int?
+
+  @@map("service_catalog")
+}
+
+enum StockMovementType {
+  IN
+  OUT
+}
+
+model StockMovement {
+  id          String            @id @default(cuid()) @db.VarChar(100)
+  partId      String            @db.VarChar(100)
+  type        StockMovementType
+  quantity    Decimal           @db.Decimal(10, 2)
+  referenceId String?           // e.g. WorkOrderId or generic note
+  createdAt   DateTime          @default(now())
+
+  part        Part              @relation(fields: [partId], references: [id])
+
+  @@map("stock_movements")
+}
+
+// --- Finance ---
+
+enum FinancialRecordType {
+  INCOME
+  EXPENSE
+}
+
+enum FinancialStatus {
+  PENDING
+  PAID
+  CANCELED
+}
+
+model FinancialRecord {
+  id            String              @id @default(cuid()) @db.VarChar(100)
+  description   String
+  type          FinancialRecordType
+  amount        Decimal             @db.Decimal(10, 2)
+  status        FinancialStatus     @default(PENDING)
+  paymentMethod String?             // PIX, CARD, CASH, TRANSFER
+  category      String?             // OPERATIONAL, SUPPLIER, RENT, LABOR, etc.
+  costAmount    Decimal?            @default(0) @db.Decimal(10, 2) // For DRE calculations
+  dueDate       DateTime?
+  paidAt        DateTime?
+  
+  workOrderId   String?             @db.VarChar(100)
+  
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  workOrder     WorkOrder?          @relation(fields: [workOrderId], references: [id])
+
+  @@map("financial_records")
+}
+
+model CashClosure {
+  id              String   @id @default(cuid()) @db.VarChar(100)
+  date            DateTime @unique @default(now())
+  systemTotal     Decimal  @db.Decimal(10, 2)
+  manualTotal     Decimal  @db.Decimal(10, 2)
+  difference      Decimal  @db.Decimal(10, 2)
+  observations    String?  @db.Text
+  closedById      String   @db.VarChar(100)
+  createdAt       DateTime @default(now())
+
+  @@map("cash_closures")
+}
+
+// --- CRM Leads ---
+
+model Lead {
+  id                    String   @id @default(cuid()) @db.VarChar(100)
+  nome                  String
+  email                 String
+  telefone              String?
+  instagram             String?
+  ramo                  String?
+  faturamentoRaw        String?  @map("faturamento_raw")
+  faturamentoCategoria  String?  @map("faturamento_categoria")
+  investRaw             String?  @map("invest_raw")
+  investCategoria       String?  @map("invest_categoria")
+  objetivo              String?
+  fazTrafego            String?  @map("faz_trafego")
+  tagsAi                String?  @map("tags_ai") // Stored as JSON string
+  scorePotencial        Int      @default(0) @map("score_potencial")
+  urgencia              String?
+  resumoAi              String?  @map("resumo_ai")
+  statusKanban          String   @default("cold") @map("status_kanban")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("leads")
+}
+// --- Integrations ---
+
+model IntegrationToken {
+  id            String   @id @default(cuid()) @db.VarChar(100)
+  provider      String   @unique // e.g. "bling"
+  accessToken   String   @db.Text
+  refreshToken  String   @db.Text
+  expiresAt     DateTime
+  updatedAt     DateTime @updatedAt
+
+  @@map("integration_tokens")
+}
