@@ -2,7 +2,11 @@
 
 import { Building2, Wrench, Truck } from 'lucide-react';
 
-export default function About() {
+interface AboutProps {
+    onLearnMoreClick?: () => void;
+}
+
+export default function About({ onLearnMoreClick }: AboutProps) {
     return (
         <section id="sobre" className="py-24 bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900">
             <div className="max-w-7xl mx-auto px-6">
