@@ -59,7 +59,7 @@ export default function Services() {
                     </motion.h2>
                     <div className="w-20 h-1.5 bg-indigo-600 mx-auto rounded-full mb-6"></div>
                     <p className="text-gray-500 max-w-2xl mx-auto text-lg italic">
-                        "Da oficina para a estrada: tecnologia e experiência em cada parafuso."
+                        &quot;Da oficina para a estrada: tecnologia e experiência em cada parafuso.&quot;
                     </p>
                 </div>
 

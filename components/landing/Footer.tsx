@@ -18,7 +18,7 @@ export default function Footer({ onAboutClick }: FooterProps) {
                     </div>
                     <p className="text-gray-400 leading-relaxed">
                         Soluções completas em peças, pneus e manutenção automotiva.
-                        <strong className="text-white block mt-2">"Atenção que vira solução"</strong>
+                        <strong className="text-white block mt-2">&quot;Atenção que vira solução&quot;</strong>
                     </p>
                 </div>
 
