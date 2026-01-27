@@ -35,113 +35,133 @@ async function getStats(searchParams: { month?: string, year?: string, from?: st
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
 
-    // Execute all queries in parallel
-    const [
-        osOpen,
-        appointmentsToday,
-        appointmentsWeek,
-        osTotal,
-        forecastToday,
-        forecastWeek,
-        totalProducts,
-        totalServices,
-        salesTodayAgg,
-        salesCountToday,
-        salesMonthAgg
-    ] = await Promise.all([
-        // 1. OS em Aberto
-        prisma.workOrder.count({
-            where: {
-                status: { notIn: ['FINALIZADA', 'ENTREGUE'] },
-                vehicleId: { not: null as any }
-            }
-        }),
-        // 2. Agendamentos Hoje
-        prisma.workOrder.count({
-            where: {
-                createdAt: { gte: today, lt: tomorrow },
-                vehicleId: { not: null as any },
-                status: { notIn: ['FINALIZADA', 'ENTREGUE'] }
-            }
-        }),
-        // 3. Agendamentos Semana
-        prisma.workOrder.count({
-            where: {
-                createdAt: { gte: startOfWeek },
-                vehicleId: { not: null as any },
-                status: { notIn: ['FINALIZADA', 'ENTREGUE'] }
-            }
-        }),
-        // 4. OS Total (Historical)
-        prisma.workOrder.count({
-            where: {
-                vehicleId: { not: null as any },
-                createdAt: { gte: startDate, lte: endDate }
-            }
-        }),
-        // 5. Previsão de Retorno Hoje
-        prisma.workOrder.count({
-            where: {
-                status: 'EM_EXECUCAO',
-                vehicleId: { not: null as any }
-            }
-        }),
-        // 6. Previsão de Retorno Semana
-        prisma.workOrder.count({
-            where: {
-                status: { in: ['EM_EXECUCAO', 'AGUARDANDO_APROVACAO'] },
-                vehicleId: { not: null as any }
-            }
-        }),
-        // 7. Total Produtos
-        prisma.part.count(),
-        // 8. Total Serviços
-        prisma.serviceCatalog.count(),
-        // 9. Receita Hoje
-        prisma.financialRecord.aggregate({
-            _sum: { amount: true },
-            where: {
-                createdAt: { gte: today, lt: tomorrow },
-                type: 'INCOME',
-                status: 'PAID'
-            }
-        }),
-        // 10. Qtd Lançamentos de Receita Hoje
-        prisma.financialRecord.count({
-            where: {
-                createdAt: { gte: today, lt: tomorrow },
-                type: 'INCOME',
-                status: 'PAID'
-            }
-        }),
-        // 11. Receita Período
-        prisma.financialRecord.aggregate({
-            _sum: { amount: true },
-            where: {
-                createdAt: { gte: startDate, lte: endDate },
-                type: 'INCOME',
-                status: 'PAID'
-            }
-        })
-    ]);
+    try {
+        // Execute all queries in parallel
+        const [
+            osOpen,
+            appointmentsToday,
+            appointmentsWeek,
+            osTotal,
+            forecastToday,
+            forecastWeek,
+            totalProducts,
+            totalServices,
+            salesTodayAgg,
+            salesCountToday,
+            salesMonthAgg
+        ] = await Promise.all([
+            // 1. OS em Aberto
+            prisma.workOrder.count({
+                where: {
+                    status: { notIn: ['FINALIZADA', 'ENTREGUE'] },
+                    vehicleId: { not: null as any }
+                }
+            }),
+            // 2. Agendamentos Hoje
+            prisma.workOrder.count({
+                where: {
+                    createdAt: { gte: today, lt: tomorrow },
+                    vehicleId: { not: null as any },
+                    status: { notIn: ['FINALIZADA', 'ENTREGUE'] }
+                }
+            }),
+            // 3. Agendamentos Semana
+            prisma.workOrder.count({
+                where: {
+                    createdAt: { gte: startOfWeek },
+                    vehicleId: { not: null as any },
+                    status: { notIn: ['FINALIZADA', 'ENTREGUE'] }
+                }
+            }),
+            // 4. OS Total (Historical)
+            prisma.workOrder.count({
+                where: {
+                    vehicleId: { not: null as any },
+                    createdAt: { gte: startDate, lte: endDate }
+                }
+            }),
+            // 5. Previsão de Retorno Hoje
+            prisma.workOrder.count({
+                where: {
+                    status: 'EM_EXECUCAO',
+                    vehicleId: { not: null as any }
+                }
+            }),
+            // 6. Previsão de Retorno Semana
+            prisma.workOrder.count({
+                where: {
+                    status: { in: ['EM_EXECUCAO', 'AGUARDANDO_APROVACAO'] },
+                    vehicleId: { not: null as any }
+                }
+            }),
+            // 7. Total Produtos
+            prisma.part.count(),
+            // 8. Total Serviços
+            prisma.serviceCatalog.count(),
+            // 9. Receita Hoje
+            prisma.financialRecord.aggregate({
+                _sum: { amount: true },
+                where: {
+                    createdAt: { gte: today, lt: tomorrow },
+                    type: 'INCOME',
+                    status: 'PAID'
+                }
+            }),
+            // 10. Qtd Lançamentos de Receita Hoje
+            prisma.financialRecord.count({
+                where: {
+                    createdAt: { gte: today, lt: tomorrow },
+                    type: 'INCOME',
+                    status: 'PAID'
+                }
+            }),
+            // 11. Receita Período
+            prisma.financialRecord.aggregate({
+                _sum: { amount: true },
+                where: {
+                    createdAt: { gte: startDate, lte: endDate },
+                    type: 'INCOME',
+                    status: 'PAID'
+                }
+            })
+        ]);
 
-    const salesTodayValue = Number(salesTodayAgg._sum?.amount || 0);
-    const salesMonthValue = Number(salesMonthAgg._sum?.amount || 0);
+        const salesTodayValue = Number(salesTodayAgg._sum?.amount || 0);
+        const salesMonthValue = Number(salesMonthAgg._sum?.amount || 0);
 
-    return {
-        osOpen,
-        appointmentsToday,
-        appointmentsWeek,
-        osTotal,
-        forecastToday,
-        forecastWeek,
-        totalProducts,
-        totalServices,
-        salesTodayValue,
-        salesCountToday,
-        salesMonthValue,
-        mode: searchParams.from ? 'RANGE' : 'MONTH'
-    };
+        return {
+            osOpen,
+            appointmentsToday,
+            appointmentsWeek,
+            osTotal,
+            forecastToday,
+            forecastWeek,
+            totalProducts,
+            totalServices,
+            salesTodayValue,
+            salesCountToday,
+            salesMonthValue,
+            mode: searchParams.from ? 'RANGE' : 'MONTH',
+            error: null
+        };
+    } catch (e) {
+        console.error("Erro ao buscar estatísticas do dashboard:", e);
+        return {
+            osOpen: 0,
+            appointmentsToday: 0,
+            appointmentsWeek: 0,
+            osTotal: 0,
+            forecastToday: 0,
+            forecastWeek: 0,
+            totalProducts: 0,
+            totalServices: 0,
+            salesTodayValue: 0,
+            salesCountToday: 0,
+            salesMonthValue: 0,
+            mode: searchParams.from ? 'RANGE' : 'MONTH',
+            error: "Erro de conexão com o banco de dados. Verifique as configurações (DATABASE_URL)."
+        };
+    }
 }
 
 export default async function DashboardPage({ searchParams }: { searchParams: { month?: string, year?: string, from?: string, to?: string } }) {
@@ -172,6 +192,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
                 </div>
                 <DashboardDateFilter />
             </div>
+
+            {stats.error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 animate-pulse">
+                    <AlertCircle className="h-5 w-5" />
+                    <span className="text-sm font-bold">{stats.error}</span>
+                </div>
+            )}
 
             {/* Minimalist Welcome Banner */}
             <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 p-8 shadow-sm dark:bg-gray-950 dark:border-gray-900">

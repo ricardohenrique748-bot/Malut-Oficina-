@@ -24,7 +24,7 @@ export default function LoginPage() {
                 password,
             });
 
-            console.log("Resultado Supabase:", { error: authError, session: data?.session });
+            console.log("Resultado Supabase Auth:", { error: authError, session: data?.session });
 
             if (authError) {
                 setError(authError.message === "Invalid login credentials"
@@ -32,13 +32,14 @@ export default function LoginPage() {
                     : authError.message);
                 setLoading(false);
             } else {
-                console.log("Login sucesso, redirecionando para /dashboard...");
-                router.refresh();
-                router.push("/dashboard");
+                console.log("Login no Auth feito com sucesso. Aguardando redirecionamento...");
+                // Force a full page reload to the dashboard to ensure middleware and server components
+                // can access the new session cookies correctly.
+                window.location.href = "/dashboard";
             }
         } catch (err) {
             console.error("Erro capturado no login:", err);
-            setError("Ocorreu um erro no login.");
+            setError("Ocorreu um erro no login. Verifique sua conexão.");
             setLoading(false);
         }
     };
