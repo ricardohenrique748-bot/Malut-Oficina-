@@ -16,22 +16,31 @@ export default function LoginPage() {
         e.preventDefault();
         setLoading(true);
         setError("");
-        console.log("Iniciando login para:", email);
+
+        const trimmedEmail = email.trim();
+        const trimmedPassword = password.trim();
+
+        console.log("Iniciando login para:", trimmedEmail);
 
         try {
+            // Force sign out to clear potentially stale local storage from previous connection attempts
+            await supabase.auth.signOut();
+
             const { error: authError, data } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+                email: trimmedEmail,
+                password: trimmedPassword,
             });
 
             console.log("Resultado Supabase Auth:", { error: authError, session: data?.session });
 
             if (authError) {
+                console.error("Erro detalhado:", authError);
                 setError(authError.message === "Invalid login credentials"
-                    ? "Email ou senha inválidos."
-                    : authError.message);
+                    ? "Email ou senha inválidos. Tente limpar o cache do navegador."
+                    : `Erro: ${authError.message}`);
                 setLoading(false);
             } else {
+                console.log("LOGIN SUCESSO! Redirecionando...");
                 console.log("Login no Auth feito com sucesso. Aguardando redirecionamento...");
                 // Force a full page reload to the dashboard to ensure middleware and server components
                 // can access the new session cookies correctly.
