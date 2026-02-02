@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { Lock, Mail } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -11,6 +11,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,14 +37,12 @@ export default function LoginPage() {
             if (authError) {
                 console.error("Erro detalhado:", authError);
                 setError(authError.message === "Invalid login credentials"
-                    ? "Email ou senha inválidos. Tente limpar o cache do navegador."
+                    ? `Email ou senha inválidos. (Tentativa às ${new Date().toLocaleTimeString()})`
                     : `Erro: ${authError.message}`);
                 setLoading(false);
             } else {
                 console.log("LOGIN SUCESSO! Redirecionando...");
-                console.log("Login no Auth feito com sucesso. Aguardando redirecionamento...");
-                // Force a full page reload to the dashboard to ensure middleware and server components
-                // can access the new session cookies correctly.
+                // Force a full page reload to the dashboard
                 window.location.href = "/dashboard";
             }
         } catch (err) {
@@ -73,7 +72,7 @@ export default function LoginPage() {
                         Malut Oficina
                     </h2>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                        Entre com suas credenciais
+                        Entre com suas credenciais v3.0
                     </p>
                 </div>
 
@@ -87,7 +86,8 @@ export default function LoginPage() {
                                 id="email-address"
                                 name="email"
                                 type="email"
-                                readOnly={loading} // Prevent edits while loading
+                                autoComplete="username"
+                                readOnly={loading}
                                 required
                                 className="block w-full rounded-md border border-gray-300 px-3 py-3 pl-10 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white sm:text-sm transition-all"
                                 placeholder="Email"
@@ -102,14 +102,22 @@ export default function LoginPage() {
                             <input
                                 id="password"
                                 name="password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
+                                autoComplete="current-password"
                                 readOnly={loading}
                                 required
-                                className="block w-full rounded-md border border-gray-300 px-3 py-3 pl-10 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white sm:text-sm transition-all"
+                                className="block w-full rounded-md border border-gray-300 px-3 py-3 pl-10 pr-10 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white sm:text-sm transition-all"
                                 placeholder="Senha"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            >
+                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                            </button>
                         </div>
                     </div>
 
@@ -132,7 +140,6 @@ export default function LoginPage() {
 
                 <div className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
                     &copy; {new Date().getFullYear()} Malut Oficina. Todos os direitos reservados.
-                    {/* Credentials hint for dev only - keeping hidden or minimal */}
                 </div>
             </div>
         </div>
